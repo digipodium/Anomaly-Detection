@@ -6,9 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import plotly.express as px
 import os
-import webcam
+import pickle
 
-Datapath = 'datasets/mice.csv'
+Datapath = 'datasets/housing.csv'
 
 st.sidebar.header(PROJECT_NAME)
 st.sidebar.write(AUTHOR)
@@ -17,7 +17,16 @@ def load_data(rows = None):
     data = pd.read_csv(Datapath)
     return data
 
-dataMice = load_data()
+def load_model(path = 'models/iso_linear_model.pk'):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+with st.spinner('loading anamoly dectection model'):
+    model = load_model()
+    isolationForest = load_model('models/isolation_model.pk')
+    st.success('models loaded into memory')
+
+dataHousing = load_data()
 
 choice = st.sidebar.radio("Project Menu",MENU_OPTIONS)
 
@@ -25,13 +34,13 @@ if choice =='view data':
     st.title("View raw data")
     
     st.write('Dataset')
-    st.write(dataMice)
+    st.write(dataHousing)
 
 if choice =='view stats':
     st.title('View Statistics in Dataset')
 
     st.write('News Dataset')
-    describeData = dataMice.describe()
+    describeData = dataHousing.describe()
     st.write(describeData)
 
 if choice =='visualize':
@@ -40,13 +49,31 @@ if choice =='visualize':
 if choice =='prediction':
     st.title('Use AI to predict')
     st.subheader('fill the detail and get result')
-    customerID = st.text_input("enter customer id")
-    state = st.text_input('enter state')
-    has_card = st.checkbox('do you have credit card')
-    credit_score = st.number_input('credit score', min_value=0, max_value=100)
-    clicked = st.button("Click to classify customer")
-    if clicked:
-        st.success("abhi bahut code baki h")
+
+    CRIM =st.number_input('per capita crime rate by town',min_value=0.0063, max_value=88.9762)
+    ZN = st.number_input('proportion of residential land zoned for lots over 25,000 sq.ft.',min_value=0.0, max_value=100.0)
+    INDUS = st.number_input('proportion of non-retail business acres per town',min_value=0.4600, max_value=27.7400)
+    CHAS = st.number_input('Charles River dummy variable (= 1 if tract bounds river; 0 otherwise)',min_value=0.0, max_value=1.0)
+    NOX = st.number_input('nitric oxides concentration (parts per 10 million)',min_value=0.3850, max_value=0.8710)
+    RM = st.number_input('average number of rooms per dwelling',min_value=3.5610, max_value=8.7800)
+    AGE = st.number_input('proportion of owner-occupied units built prior to 1940',min_value=2.9000, max_value=100.0)
+    DIS = st.number_input('weighted distances to five Boston employment centres',min_value=1.1296, max_value=12.1265)
+    RAD = st.number_input('index of accessibility to radial highways',min_value=1, max_value=24)
+    TAX = st.number_input('full-value property-tax rate per $10,000',min_value=187, max_value=711)
+    PTRATIO = st.number_input('pupil-teacher ratio by town',min_value=12.6000, max_value=22.0)
+    B = st.number_input('1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town',min_value=0.3200, max_value=396.9000)
+    LSTAT = st.number_input('percent lower status of the population',min_value=1.7300, max_value=37.9700)
+
+
+    clicked = st.button("Make Anamoly Detection")
+    if clicked and model:
+        st.title('Anamoly Detection')
+
+        features = np.array([CRIM,ZN,INDUS,CHAS,NOX,RM,AGE,DIS,RAD,TAX,PTRATIO,B,LSTAT])
+
+        prediction = model.predict(features.reshape(1, -1))
+        st.header("Anamoly detection")
+        st.success(prediction[0])
 
 if choice =='history':
     st.title('Previous prediction')
@@ -64,11 +91,3 @@ if choice == 'upload':
     if img:
         st.image(img.read())
     st.button('Make Predicton')
-
-if choice == 'webcam':
-    st.title("use webcam for realtime prediction")
-    st.info("Please follow the code of learning")
-    cam_num = st.number_input('select camera',min_value=1,max_value=5,value=1)
-    clicked = st.button('Launch camera')
-    if clicked:
-        webcam.camera(cam_num-1)
